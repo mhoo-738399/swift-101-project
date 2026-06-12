@@ -1,13 +1,16 @@
 import Foundation
 
-// MARK: - كتاب Book
 class Book {
+    // خصائص مطلوبة (Required)
     let id: Int
     var title: String
     var author: String
-    var price: Double?   // اختياري
-    var quantity: Int?   // اختياري
     
+    // خصائص اختيارية (Optional)
+    var price: Double?
+    var quantity: Int?
+    
+    // المشيد (Initializer)
     init(id: Int, title: String, author: String, price: Double? = nil, quantity: Int? = nil) {
         self.id = id
         self.title = title
@@ -16,274 +19,140 @@ class Book {
         self.quantity = quantity
     }
     
+    // دالة لعرض معلومات الكتاب مع التعامل مع القيم الاختيارية بأمان
     func displayInfo() {
-        let priceStr = price.map { String($0) } ?? "غير محدد"
-        let qtyStr = quantity.map { String($0) } ?? "0"
-        print("📖 ID: \(id) | العنوان: \"\(title)\" | المؤلف: \(author) | السعر: \(priceStr) | الكمية: \(qtyStr)")
+        let bookPrice = price != nil ? "\(price!) ريال" : "غير محدد"
+        let bookQuantity = quantity != nil ? "\(quantity!)" : "غير محدد"
+        
+        print("""
+        -----------------------------------
+        رقم الكتاب: \(id)
+        العنوان: \(title)
+        المؤلف: \(author)
+        السعر: \(bookPrice)
+        الكمية المتاحة: \(bookQuantity)
+        -----------------------------------
+        """)
     }
 }
 
-// MARK: - فاتورة Invoice
-class Invoice {
-    private struct Item {
-        let book: Book
-        let quantitySold: Int
-        let subtotal: Double
+class Bookstore {
+    var inventory: [Book] = []
+    
+    // 1. إضافة كتاب جديد
+    func addBook(_ book: Book) {
+        inventory.append(book)
+        print("✅ تم إضافة كتاب '\(book.title)' بنجاح.")
     }
     
-    private var items: [Item] = []
-    private var total: Double = 0.0
-    private let date: Date
-    
-    init() {
-        self.date = Date()
-    }
-    
-    func addItem(book: Book, quantity: Int) {
-        let price = book.price ?? 0.0
-        let subtotal = price * Double(quantity)
-        items.append(Item(book: book, quantitySold: quantity, subtotal: subtotal))
-        total += subtotal
-    }
-    
-    func printInvoice() {
-        print("\n" + String(repeating: "=", count: 50))
-        print("📄 الفاتورة - التاريخ: \(formattedDate())")
-        print(String(repeating: "=", count: 50))
-        print("الكتاب\t\t\tالكمية\tالسعر\tالإجمالي")
-        for item in items {
-            let price = item.book.price ?? 0.0
-            print("\(item.book.title) (ID:\(item.book.id))\t\(item.quantitySold)\t\(price)\t\(item.subtotal)")
+    // 2. تعديل معلومات كتاب
+    func updateBook(id: Int, newTitle: String?, newAuthor: String?, newPrice: Double?, newQuantity: Int?) {
+        if let book = inventory.first(where: { $0.id == id }) {
+            if let title = newTitle { book.title = title }
+            if let author = newAuthor { book.author = author }
+            if let price = newPrice { book.price = price }
+            if let quantity = newQuantity { book.quantity = quantity }
+            print("🔄 تم تحديث بيانات الكتاب رقم \(id) بنجاح.")
+        } else {
+            print("❌ عذرًا، الكتاب رقم \(id) غير موجود.")
         }
-        print(String(repeating: "-", count: 50))
-        print("💰 الإجمالي: \(total)")
-        print(String(repeating: "=", count: 50))
     }
     
-    private func formattedDate() -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-}
-
-// MARK: - مكتبة Library
-class Library {
-    private var books: [Int: Book] = [:]   // تخزين باستخدام ID كمفتاح
-    
-    // إضافة كتاب
-    func addBook(_ book: Book) -> Bool {
-        guard books[book.id] == nil else {
-            print("❌ الكتاب ذو ID \(book.id) موجود مسبقاً.")
-            return false
+    // 3. حذف كتاب
+    func deleteBook(id: Int) {
+        if let index = inventory.firstIndex(where: { $0.id == id }) {
+            let removedBook = inventory.remove(at: index)
+            print("🗑️ تم حذف كتاب '\(removedBook.title)' من النظام.")
+        } else {
+            print("❌ عذرًا، لم يتم العثور على الكتاب لحذفه.")
         }
-        books[book.id] = book
-        print("✅ تم إضافة الكتاب: \"\(book.title)\"")
-        return true
     }
     
-    // تعديل كتاب (باستخدام ID)
-    func updateBook(id: Int, title: String? = nil, author: String? = nil, price: Double? = nil, quantity: Int? = nil) -> Bool {
-        guard let book = books[id] else {
-            print("❌ لم يتم العثور على كتاب بالـ ID \(id)")
-            return false
+    // 4. الاستعلام عن كتاب (البحث)
+    func searchBook(byQuery query: String) {
+        let results = inventory.filter { book in
+            String(book.id) == query || 
+            book.title.lowercased().contains(query.lowercased()) || 
+            book.author.lowercased().contains(query.lowercased())
         }
-        if let newTitle = title { book.title = newTitle }
-        if let newAuthor = author { book.author = newAuthor }
-        if let newPrice = price { book.price = newPrice }
-        if let newQuantity = quantity { book.quantity = newQuantity }
-        print("✅ تم تعديل الكتاب ID \(id)")
-        return true
-    }
-    
-    // حذف كتاب
-    func deleteBook(id: Int) -> Bool {
-        guard books[id] != nil else {
-            print("❌ لم يتم العثور على كتاب بالـ ID \(id)")
-            return false
+        
+        if results.isEmpty {
+            print("🔍 لا توجد نتائج للبحث عن: '\(query)'")
+        } else {
+            print("🔍 نتائج البحث (\(results.count)):")
+            for book in results {
+                book.displayInfo()
+            }
         }
-        books.removeValue(forKey: id)
-        print("✅ تم حذف الكتاب ID \(id)")
-        return true
     }
     
-    // عرض جميع الكتب
-    func displayAllBooks() {
-        guard !books.isEmpty else {
-            print("📭 لا توجد كتب في المكتبة.")
+    // 5. بيع كتاب وتصدير فاتورة
+    func sellBook(id: Int, requestedQuantity: Int) {
+        // التحقق من وجود الكتاب
+        guard let book = inventory.first(where: { $0.id == id }) else {
+            print("❌ عملية البيع فشلت: الكتاب غير موجود بالنظام.")
             return
         }
-        print("\n📚 قائمة الكتب في المكتبة:")
-        for book in books.values.sorted(by: { $0.id < $1.id }) {
-            book.displayInfo()
-        }
-    }
-    
-    // البحث بالـ ID
-    func findBookById(_ id: Int) -> Book? {
-        return books[id]
-    }
-    
-    // البحث بالعنوان (بحث جزئي، غير حساس لحالة الأحرف)
-    func findBooksByTitle(_ title: String) -> [Book] {
-        return books.values.filter { $0.title.localizedCaseInsensitiveContains(title) }
-    }
-    
-    // البحث بالمؤلف (بحث جزئي)
-    func findBooksByAuthor(_ author: String) -> [Book] {
-        return books.values.filter { $0.author.localizedCaseInsensitiveContains(author) }
-    }
-    
-    // عملية البيع وإنشاء فاتورة
-    func sellBooks(_ items: [(bookId: Int, quantity: Int)]) -> Invoice? {
-        let invoice = Invoice()
-        var errors: [String] = []
         
-        for item in items {
-            guard let book = books[item.bookId] else {
-                errors.append("الكتاب ID \(item.bookId) غير موجود.")
-                continue
+        // التحقق من وجود كمية كافية (مفهوم الـ Optional Unwrapping هنا أساسي)
+        if let currentQuantity = book.quantity {
+            if currentQuantity >= requestedQuantity {
+                // إنقاص المخزون
+                book.quantity = currentQuantity - requestedQuantity
+                
+                // حساب السعر الإجمالي إن وجد
+                let singlePrice = book.price ?? 0.0
+                let totalPrice = singlePrice * Double(requestedQuantity)
+                
+                // تصدير الفاتورة
+                printInvoice(bookTitle: book.title, qty: requestedQuantity, unitPrice: singlePrice, total: totalPrice)
+                
+            } else {
+                print("⚠️ تنبيه: الكمية المطلوبة من '\(book.title)' غير متوفرة! المتاح في المخزن: \(currentQuantity) فقط.")
             }
-            let available = book.quantity ?? 0
-            guard available >= item.quantity else {
-                errors.append("الكتاب \"\(book.title)\" لا توجد كمية كافية. المطلوب: \(item.quantity)، المتوفر: \(available)")
-                continue
-            }
-            // إنقاص المخزون
-            book.quantity = available - item.quantity
-            invoice.addItem(book: book, quantity: item.quantity)
-        }
-        
-        if !errors.isEmpty {
-            print("\n⚠️ أخطاء أثناء عملية البيع:")
-            errors.forEach { print("   - \($0)") }
-            if invoice is Invoice {  // للتحقق مما إذا أضيف أي عنصر - نستخدم التالي
-                // بديل: نتحقق من وجود items عبر reflection، لكن سنبنيها ببساطة:
-            }
-        }
-        
-        // نتحقق إن كان هناك عناصر في الفاتورة عن طريق الوصول إلى الخاصية المخفية
-        // للتبسيط: نتحقق من العدد عبر دالة مساعدة (يمكن إضافة computed property)
-        // سأضيف getter بسيط بداخل Invoice لاحقاً، لكن هنا سنفعلها بطريقة أخرى:
-        if invoice.value(forKey: "items") as? [Any] != nil, (invoice.value(forKey: "items") as? [Any])?.isEmpty == false {
-            print("\n✅ تمت عملية البيع بنجاح (مع تجاهل الكتب التي بها أخطاء).")
-            invoice.printInvoice()
-            return invoice
         } else {
-            print("❌ لم تتم أي عملية بيع بسبب الأخطاء.")
-            return nil
+            print("⚠️ تنبيه: هذا الكتاب ليس له كمية محددة في المخزن (غير متاح للبيع حاليًا).")
         }
     }
-}
-
-// لتسهيل التحقق من وجود عناصر في الفاتورة، نضيف خاصية محسوبة داخل Invoice:
-extension Invoice {
-    var hasItems: Bool {
-        // باستخدام Mirror (انعكاس) بدلاً من value(forKey:) لأنها قد تسبب مشاكل أحياناً
-        let mirror = Mirror(reflecting: self)
-        for child in mirror.children {
-            if child.label == "items", let itemsArray = child.value as? [Any] {
-                return !itemsArray.isEmpty
-            }
-        }
-        return false
-    }
-}
-
-// تعديل دالة البيع لاستخدام hasItems
-extension Library {
-    func sellBooksImproved(_ items: [(bookId: Int, quantity: Int)]) -> Invoice? {
-        let invoice = Invoice()
-        var errors: [String] = []
+    
+    // دالة مساعدة لطباعة الفاتورة
+    private func printInvoice(bookTitle: String, qty: Int, unitPrice: Double, total: Double) {
+        print("""
         
-        for item in items {
-            guard let book = books[item.bookId] else {
-                errors.append("الكتاب ID \(item.bookId) غير موجود.")
-                continue
-            }
-            let available = book.quantity ?? 0
-            guard available >= item.quantity else {
-                errors.append("الكتاب \"\(book.title)\" لا توجد كمية كافية. المطلوب: \(item.quantity)، المتوفر: \(available)")
-                continue
-            }
-            book.quantity = available - item.quantity
-            invoice.addItem(book: book, quantity: item.quantity)
-        }
-        
-        if !errors.isEmpty {
-            print("\n⚠️ أخطاء أثناء عملية البيع:")
-            errors.forEach { print("   - \($0)") }
-        }
-        
-        if invoice.hasItems {
-            print("\n✅ تمت عملية البيع بنجاح (مع تجاهل الكتب التي بها أخطاء).")
-            invoice.printInvoice()
-            return invoice
-        } else {
-            print("❌ لم تتم أي عملية بيع بسبب الأخطاء.")
-            return nil
-        }
+        ===================================
+        🧾 فاتورة مبيعات 🧾
+        ===================================
+        الكتاب: \(bookTitle)
+        الكمية المباعة: \(qty)
+        سعر الوحدة: \(unitPrice) ريال
+        -----------------------------------
+        الإجمالي الإجمالي: \(total) ريال
+        ===================================
+        """)
     }
 }
+// إنشاء نظام المكتبة
+let myStore = Bookstore()
 
-// MARK: - اختبار النظام
-func runLibraryDemo() {
-    let library = Library()
-    
-    // إضافة الكتب الأولية (من الجدول)
-    let initialBooks = [
-        Book(id: 1, title: "Start with why", author: "Simon Sinek", price: 80.0, quantity: 13),
-        Book(id: 2, title: "But how do it know", author: "J. Clark Scott", price: 59.9, quantity: 22),
-        Book(id: 3, title: "Clean Code", author: "Robert Cecil Martin", price: 50.0, quantity: 5),
-        Book(id: 4, title: "Zero to One", author: "Peter Thiel", price: 45.0, quantity: 12),
-        Book(id: 5, title: "You don't know JS", author: "Kyle Simpson", price: 39.9, quantity: 9)
-    ]
-    
-    for book in initialBooks {
-        library.addBook(book)
-    }
-    
-    // عرض جميع الكتب
-    library.displayAllBooks()
-    
-    // البحث بالـ ID
-    print("\n🔍 البحث عن كتاب ID=3:")
-    if let book = library.findBookById(3) {
-        book.displayInfo()
-    }
-    
-    // البحث بالعنوان
-    print("\n🔍 البحث بعنوان يحتوي 'why':")
-    let byTitle = library.findBooksByTitle("why")
-    byTitle.forEach { $0.displayInfo() }
-    
-    // البحث بالمؤلف
-    print("\n🔍 البحث بمؤلف 'Simpson':")
-    let byAuthor = library.findBooksByAuthor("Simpson")
-    byAuthor.forEach { $0.displayInfo() }
-    
-    // تعديل كتاب
-    print("\n✏️ تعديل الكتاب ID=5 (السعر والكمية):")
-    library.updateBook(id: 5, price: 45.0, quantity: 15)
-    
-    // عملية بيع (فاتورة)
-    print("\n💰 عملية بيع:")
-    let saleItems = [
-        (bookId: 1, quantity: 2),
-        (bookId: 3, quantity: 6),   // خطأ: الكمية المتوفرة 5 فقط
-        (bookId: 5, quantity: 3)
-    ]
-    _ = library.sellBooksImproved(saleItems)
-    
-    // عرض الكتب بعد البيع لملاحظة تغير الكميات
-    library.displayAllBooks()
-    
-    // حذف كتاب
-    print("\n🗑️ حذف الكتاب ID=4:")
-    library.deleteBook(id: 4)
-    library.displayAllBooks()
-}
+// تغذية النظام ببيانات الجدول المرفق
+myStore.addBook(Book(id: 1, title: "Start with why", author: "Simon Sinek", price: 80.0, quantity: 13))
+myStore.addBook(Book(id: 2, title: "But how do it know", author: "J. Clark Scott", price: 59.9, quantity: 22))
+myStore.addBook(Book(id: 3, title: "Clean Code", author: "Robert Cecil Martin", price: 50.0, quantity: 5))
+myStore.addBook(Book(id: 4, title: "Zero to One", author: "Peter Thiel", price: 45.0, quantity: 12))
+myStore.addBook(Book(id: 5, title: "You don't know JS", author: "Kyle Simpson", price: 39.9, quantity: 9))
 
-// تشغيل الاختبار
-runLibraryDemo()
+print("\n--- 🧪 تجربة عمليات النظام 🧪 ---\n")
+
+// تجربة الاستعلام (البحث) عن طريق اسم المؤلف أو العنوان
+myStore.searchBook(byQuery: "Simon")
+myStore.searchBook(byQuery: "Clean Code")
+
+// تجربة عملية بيع ناجحة (كمية كافية)
+myStore.sellBook(id: 3, requestedQuantity: 2) // بيع قطعتين من Clean Code (المخزن سيصبح 3)
+
+// تجربة عملية بيع تفشل (كمية غير كافية)
+myStore.sellBook(id: 3, requestedQuantity: 5) // سيظهر تنبيه لأن المتبقي 3 فقط
+
+// تجربة تعديل كتاب وعرض معلوماته بعد التعديل
+myStore.updateBook(id: 5, newTitle: "You don't know Swift", newAuthor: nil, newPrice: 42.0, newQuantity: 15)
+myStore.searchBook(byQuery: "5")
